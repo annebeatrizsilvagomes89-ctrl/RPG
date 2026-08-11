@@ -34,11 +34,19 @@ class Personagem:
     def __str__(self):
         return f"{self.nome} ({self._vida}/{self._vida_maxima})"
 
+    def recarga_habilidade(self):
+        return self.recarga
+
     def mostrar_status(self):
         print("\n", self.nome)
         print("Vida:", self._vida, "/", self._vida_maxima)
         print("Mochila:", self.inventario.quantidade(), "item(ns)")
-        print
+
+        if self.recarga  == 0:
+            print("Pode usar a habilidade especial")
+
+        else:
+            print("Espere mais ", self.recarga, " turno(s)")
 
     def esta_vivo(self):
         return self._vida > 0
@@ -62,7 +70,7 @@ class Personagem:
             self._turnos_bonus_defesa -= 1
 
             if self._turnos_bonus_defesa == 0:
-                self.ataque -= self._bonus_defesa
+                self.defesa -= self._bonus_defesa
                 self._bonus_defesa = 0
 
                 print(self.nome, "sente a defesa voltar ao normal")
@@ -136,3 +144,6 @@ class Personagem:
         print(self.nome, "lança Bola de Fogo em", alvo.nome, "!")
 
         self.recarga = 2 
+
+    def agir(self, alvo):
+        self.atacar(alvo)

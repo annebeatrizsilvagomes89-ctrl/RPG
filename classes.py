@@ -2,7 +2,6 @@ import random
 
 from personagem import Personagem
 
-
 class Guerreiro(Personagem):
     def __init__(self, nome):
         super().__init__(nome, 120, 18, 8, 2)
@@ -43,16 +42,30 @@ class Mago(Personagem):
         self.curar(10)
         print(self.nome, "recuperou 10 de vida")
 
-
 class Goblin(Personagem):
     def __init__(self):
         super().__init__("Goblin", 40, 8, 2, 0)
 
+    def agir(self, alvo):
+        if self._vida < self.vida_maxima * 0.3:
+            print("O Goblin recua assustado!")
+            self.defendendo()
+        else:
+            super().agir(alvo)
 
 class Orc(Personagem):
     def __init__(self):
         super().__init__("Orc", 70, 12, 4, 0)
 
+    def agir(self, alvo):
+        if self._vida < self.vida_maxima * 0.5 and not self.enfureceu:
+            print(self.nome, "entra em fúria!")
+
+            self.aumentar_ataque_temporario(5, 3)
+
+            self.enfureceu = True
+        else:
+            self.atacar(alvo)
 
 class Troll(Personagem):
     def __init__(self):
@@ -67,6 +80,14 @@ class Troll(Personagem):
         alvo.receber_dano(dano)
         print("O Troll acertou um golpe de", dano)
 
+    def agir(self, alvo):
+        if self._vida < self.vida_maxima * 0.4 and not self.protegeu:
+            print(self.nome, "ergue o escudo para se proteger!")
+
+            self.aumentar_defesa_temporaria(intensidade = 5, duracao = 3)
+            self.protegeu = True
+        else:
+            self.atacar(alvo)
 
 class Esqueleto(Personagem):
     def __init__(self):
@@ -76,20 +97,75 @@ class Esqueleto(Personagem):
         print("Os ossos rangem")
         super().receber_dano(quantidade)
 
+    def habilidade_especial(self, alvo):
+        cura = 20
+
+        self.vida = min(self.vida_maxima, self.vida + cura)
+        print(self.nome, "se junta novamente e recupera ", cura, " de vida!")
+        self._recarga_habilidade = 3
+
+    def agir(self, alvo):
+        if self._recarga_habilidade == 0 and self.vida < self.vida_maxima:
+            self.habilidade_especial(alvo)
+        else:
+            self.atacar(alvo)
 
 class Dragao(Personagem):
     def __init__(self):
         super().__init__("Dragão Ancião", 110, 14, 4, 0)
-        self._turnos = 0
 
-    def atacar(self, alvo):
-        self._turnos += 1
-
-        if self._turnos % 3 == 0:
+    def habilidade_especial(self, alvo):
+        if self._recarga_habilidade == 0:
             dano = self.ataque + 8
             print("O Dragão solta um sopro de fogo!")
             alvo.receber_dano(dano + alvo.defesa)
             print("O sopro causou", dano, "de dano e ignorou a defesa")
+            self._recarga_habilidade = 3  
+
+    def atacar(self, alvo):
+        super().atacar(alvo)
+
+    def agir(self, alvo):
+        if self._recarga_habilidade == 0:
+            self.habilidade_especial(alvo)
+        else:
+            self.atacar(alvo)
+
+class Arqueiro(Personagem):
+    def __init__(self, nome, vida, ataque, defesa, pocoes):
+        super().__init__(nome, vida, ataque, defesa, pocoes)
+
+    def habilidade_especial(self, alvo):
+        if self.recarga >0:
+            print(self.nome, "precisa aguardar ", self.recarga, "turno(s) para usar Tiro Preciso")
             return
 
-        super().atacar(alvo)
+        dano_critico = int(self.ataque * 1.8)
+        cura = 5
+
+        print(self.nome, "dispara um Tiro Preciso em ", alvo.nome, " e recupera vida!")
+        alvo.receber_dano(dano_critico)
+
+        self._vida = min(self._vida_maxima, self._vida + cura)
+        print(self.nome, "recuperou", cura, "de vida!")
+
+        self.recarga = 3
+
+class Berserker(Personagem):
+    def __init__(self):
+        super().__init__("Berserker", 70, 12, 2, 0)
+
+    def habilidade_especial(self, alvo):
+        vida_perdida = self.vida_maxima - self.vida
+        dano_bonus = vida_perdida // 2
+        dano_total = self.ataque + dano_bonus
+
+        print(f"O {self.nome} entra em FÚRIA! (+{dano_bonus} de dano extra)")
+        alvo.receber_dano(dano_total)
+        self._recarga_habilidade = 2
+
+    def agir(self, alvo):
+        if self.vida <= (self.vida_maxima / 2) and self._recarga_habilidade == 0:
+            self.habilidade_especial(alvo)
+        else:
+            self.atacar(alvo)

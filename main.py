@@ -1,4 +1,4 @@
-from classes import Dragao, Goblin, Guerreiro, Mago, Orc, Troll
+from classes import Dragao, Goblin, Guerreiro, Mago, Orc, Troll, Esqueleto, Berserker
 from itens import AnelDeProtecao, ElixirDeFuria, PocaoDeVida
 
 CLASSES = {
@@ -42,11 +42,10 @@ def turno_do_jogador(jogador, inimigo):
         jogador.defender()
     elif escolha == "3":
         abrir_mochila(jogador, inimigo)
-    elif escolha == 4:
+    elif escolha == "4":
         jogador.habilidade_especial(inimigo)
     else:
         print("Opção inválida")
-
 
 def abrir_mochila(jogador, inimigo):
     if jogador.inventario.esta_vazio():
@@ -66,7 +65,6 @@ def abrir_mochila(jogador, inimigo):
 
     item.usar(jogador, inimigo)
 
-
 def combate(jogador, inimigo):
     while jogador.esta_vivo() and inimigo.esta_vivo():
         jogador.mostrar_status()
@@ -77,7 +75,7 @@ def combate(jogador, inimigo):
 
         if inimigo.esta_vivo():
             inimigo.iniciar_turno()
-            inimigo.atacar(jogador)
+            inimigo.agir(jogador)
 
     if jogador.esta_vivo():
         print("Vitória contra", inimigo.nome)
@@ -86,12 +84,13 @@ def combate(jogador, inimigo):
     print("Você foi derrotado")
     return False
 
-
 def main():
     jogador = escolher_personagem()
 
     fases = [
         Fase("Floresta Sombria", "Um Goblin salta na sua frente.", Goblin(), PocaoDeVida()),
+        Fase("Cemitério de Sombras", "Um Esqueleto reanimado junta seus ossos para o combate.", Esqueleto(), AnelDeProtecao()),
+        Fase("Vale dos Selvagens", "Um Berserker enfurecido corre em sua direção!", Berserker(), PocaoDeVida()),
         Fase("Trilha da Montanha", "Um Orc bloqueia o caminho.", Orc(), ElixirDeFuria()),
         Fase("Ponte Quebrada", "Um Troll ronca embaixo da ponte.", Troll(), AnelDeProtecao()),
         Fase("Covil do Dragão", "O Dragão Ancião desperta.", Dragao(), PocaoDeVida()),

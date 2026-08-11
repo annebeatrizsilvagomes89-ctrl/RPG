@@ -2,14 +2,30 @@ import random
 
 from personagem import Personagem
 
+VIDA_BAIXA_GOBLIN = 0.3
+VIDA_BAIXA_ORC = 0.5
+VIDA_BAIXA_TROLL = 0.4
+
+FORCA_DA_FURIA = 6
+DURACAO_DA_FURIA = 3
+
+FORCA_DO_ENDURENCIMENTO = 5
+DURACAO_DO_ENDURENCIMENTO = 3
+
 class Guerreiro(Personagem):
     def __init__(self, nome):
         super().__init__(nome, 120, 18, 8, 2)
 
-    def atacar(self, alvo):
-        dano = random.randint(self.ataque - 3, self.ataque + 3)
-        alvo.receber_dano(dano)
+    def atacar(self, inimigo):
+        dano = self.calcular_dano()
+        inimigo.receber_dano(dano)
         print(self.nome, "atacou sem falhar e causou", dano, "de dano")
+
+    def mensagem_de_recarga(self):
+        print(self.nome, "precisa aguardar mais", self.recarga, "turno(s) para usar o Golpe Esmagador!")
+
+    def turnos_de_recarga(self):
+        return 2
 
     def habilidade_especial(self, alvo):
         if self.recarga > 0:
@@ -22,13 +38,25 @@ class Guerreiro(Personagem):
 
         self.recarga = 3
 
+    def efeito_da_habilidade(self, alvo):
+        dano_especial = self.ataque + 10
+        print(self.nome, "usa Golpe Esmagador em", alvo.nome, "!")
+        alvo.receber_dano(dano_especial)
+        pass
+
 class Mago(Personagem):
     def __init__(self, nome):
         super().__init__(nome, 70, 10, 3, 4)
 
+    def mensagem_de_recarga(self):
+        print(self.nome, "precisa aguardar mais", self.recarga, "turno(s) para usar a Bola de Fogo!")
+
+    def turnos_de_recarga(self):
+        return 2 
+
     def habilidade_especial(self, alvo):
         if self.recarga >0:
-            print(self.nome, "precisa aguardar mais", self.recarga, "turno(s) para usar a Bola de Fogo!")
+            self.mensagem_de_recarga()
             return
         
         dano_magico = self.ataque + 10
@@ -36,6 +64,11 @@ class Mago(Personagem):
         alvo.receber_dano(dano_magico)
         
         self.recarga = 2 
+
+    def efeito_da_habilidade(self, alvo):
+        dano_magico = self.ataque + 10
+        print(self.nome, "lança Bola de Fogo em", alvo.nome, "!")
+        alvo.receber_dano(dano_magico)
 
     def defender(self):
         super().defender()
@@ -47,23 +80,28 @@ class Goblin(Personagem):
         super().__init__("Goblin", 40, 8, 2, 0)
 
     def agir(self, alvo):
-        if self._vida < self.vida_maxima * 0.3:
+        if self._vida / self.vida_maxima <= VIDA_BAIXA_GOBLIN:
             print("O Goblin recua assustado!")
-            self.defendendo()
+            self.defendendo = True
+            pass
         else:
-            super().agir(alvo)
+            self.atacar(alvo)
 
 class Orc(Personagem):
     def __init__(self):
         super().__init__("Orc", 70, 12, 4, 0)
 
     def agir(self, alvo):
-        if self._vida < self.vida_maxima * 0.5 and not self.enfureceu:
+        if self._vida / self.vida_maxima <= VIDA_BAIXA_ORC and not self.enfureceu:
             print(self.nome, "entra em fúria!")
+
+            self.aplicar_bonus_ataque_temporario(FORCA_DA_FURIA, DURACAO_DA_FURIA)
 
             self.aumentar_ataque_temporario(5, 3)
 
             self.enfureceu = True
+
+            self.atacar(alvo)
         else:
             self.atacar(alvo)
 
@@ -81,10 +119,10 @@ class Troll(Personagem):
         print("O Troll acertou um golpe de", dano)
 
     def agir(self, alvo):
-        if self._vida < self.vida_maxima * 0.4 and not self.protegeu:
+        if self._vida / self.vida_maxima <= VIDA_BAIXA_TROLL and not self.protegeu:
             print(self.nome, "ergue o escudo para se proteger!")
 
-            self.aumentar_defesa_temporaria(intensidade = 5, duracao = 3)
+            self.aplicar_bonus_ataque_temporario(FORCA_DO_ENDURENCIMENTO, DURACAO_DO_ENDURENCIMENTO)
             self.protegeu = True
         else:
             self.atacar(alvo)
@@ -106,13 +144,16 @@ class Esqueleto(Personagem):
 
     def agir(self, alvo):
         if self._recarga_habilidade == 0 and self.vida < self.vida_maxima:
-            self.habilidade_especial(alvo)
+            self.usar_habilidade(alvo)
         else:
             self.atacar(alvo)
 
 class Dragao(Personagem):
     def __init__(self):
         super().__init__("Dragão Ancião", 110, 14, 4, 0)
+
+    def mensagem_de_recarga(self):
+        print(self.nome, "precisa aguardar mais", self.recarga, "turno(s) para usar o Sopro de Fogo!")
 
     def habilidade_especial(self, alvo):
         if self._recarga_habilidade == 0:
@@ -121,6 +162,13 @@ class Dragao(Personagem):
             alvo.receber_dano(dano + alvo.defesa)
             print("O sopro causou", dano, "de dano e ignorou a defesa")
             self._recarga_habilidade = 3  
+
+    def efeito_da_habilidade(self, alvo):
+        dano = self.ataque + 8
+        print("O Dragão solta um sopro de fogo!")
+        alvo.receber_dano(dano + alvo.defesa)
+        print("O sopro causou", dano, "de dano e ignorou a defesa")
+        self._recarga_habilidade = 3
 
     def atacar(self, alvo):
         super().atacar(alvo)

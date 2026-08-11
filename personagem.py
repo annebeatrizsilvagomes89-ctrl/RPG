@@ -2,6 +2,31 @@ import random
 
 from itens import Inventario, PocaoDeVida
 
+LADOS_DO_DADO = 20
+ROLAGEM_MINIMA_PARA_ACERTAR = 5
+VARIACAO_DO_DANO = 3
+
+class BonusTemporario:
+    def __init__(self):
+        self.quantidade = 0
+        self.turnos = 0
+
+    def ativo(self):
+        return self.turnos > 0
+
+    def comecar(self, quantidade, turnos):
+        self.quantidade = quantidade
+        self.turnos = turnos
+
+    def passar_turno(self):
+        if self.turnos > 0:
+            self.turnos -= 1
+            if self.turnos == 0:
+                return True
+        return False
+
+    def limpar(self):
+        self.quantidade = 0
 
 class Personagem:
     def __init__(self, nome, vida, ataque, defesa, pocoes):
@@ -12,9 +37,8 @@ class Personagem:
         self.defesa = defesa
         self.defendendo = False
         self.nivel = 1
-        self._bonus_ataque = 0
-        self._turnos_bonus_ataque = 0
-        self._bonus_defesa = 0
+        self._bonus_ataque = BonusTemporario()
+        self._bonus_defesa = BonusTemporario()
         self._turnos_bonus_defesa = 0
 
         self.recarga = 0
@@ -22,6 +46,9 @@ class Personagem:
         self.inventario = Inventario()
         for _ in range(pocoes):
             self.inventario.adicionar(PocaoDeVida())
+
+        self.quantidade = 0
+        self.turnos = 0
 
     @property
     def vida(self):
@@ -36,6 +63,26 @@ class Personagem:
 
     def recarga_habilidade(self):
         return self.recarga
+
+    def usar_habilidade(self, alvo):
+        if self.recarga > 0:
+            self.mensagem_de_recarga()
+            return
+
+        self.efeito_da_habilidade(alvo)
+        self.iniciar_recarga(self.turnos_de_recarga())
+
+    def iniciar_recarga(self, turnos):
+        self.recarga = turnos
+
+    def mensagem_de_recarga(self):
+        print(f"{self.nome} precisa aguardar mais {self.recarga} turno(s).")
+
+    def turnos_de_recarga(self):
+        return 3
+
+    def efeito_da_habilidade(self, alvo):
+        print(f"{self.nome} ainda não possui uma habilidade especial.")
 
     def mostrar_status(self):
         print("\n", self.nome)
@@ -54,26 +101,18 @@ class Personagem:
     def iniciar_turno(self):
         self.defendendo = False
 
-        if self.recarga >0:
+        if self.recarga > 0:
             self.recarga -= 1
 
-        if self._turnos_bonus_ataque >  0:
-            self._turnos_bonus_ataque -= 1
+        if self.bonus_ataque.passar_turno():
+            self.ataque -= self.bonus_ataque.quantidade
+            self.bonus_ataque.limpar()
+            print(self.nome, "sente o ataque voltar ao normal")
 
-            if self._turnos_bonus_ataque == 0:
-                self.ataque -= self._bonus_ataque
-                self._bonus_ataque = 0
-
-                print(self.nome, "sente o ataque voltar ao normal")
-
-        if self._turnos_bonus_defesa >  0:
-            self._turnos_bonus_defesa -= 1
-
-            if self._turnos_bonus_defesa == 0:
-                self.defesa -= self._bonus_defesa
-                self._bonus_defesa = 0
-
-                print(self.nome, "sente a defesa voltar ao normal")
+        if self.bonus_defesa.passar_turno():
+            self.defesa -= self.bonus_defesa.quantidade
+            self.bonus_defesa.limpar()
+            print(self.nome, "sente a defesa voltar ao normal")
 
     def curar(self, quantidade):
         if quantidade <= 0:
@@ -89,14 +128,17 @@ class Personagem:
         dano_real = max(0, dano_real)
         self._vida = max(0, self._vida - dano_real)
 
-    def atacar(self, alvo):
-        rolagem = random.randint(1, 20)
+    def calcular_dano(self):
+        return random.randint(self.ataque - VARIACAO_DO_DANO, self.ataque + VARIACAO_DO_DANO)
 
-        if rolagem < 5:
+    def atacar(self, alvo):
+        rolagem = random.randint(1, LADOS_DO_DADO)
+
+        if rolagem < ROLAGEM_MINIMA_PARA_ACERTAR:
             print(self.nome, "errou o ataque")
             return
 
-        dano = random.randint(self.ataque - 3, self.ataque + 3)
+        dano = self.calcular_dano()
         alvo.receber_dano(dano)
         print(self.nome, "causou", dano, "de dano")
 
@@ -124,14 +166,12 @@ class Personagem:
 
     def aplicar_bonus_ataque_temporario(self, quantidade, turnos):
         self.ataque += quantidade
-        self._bonus_ataque = quantidade
-        self._turnos_bonus_ataque = turnos
+        self.bonus_ataque.comecar(quantidade, turnos)
         print(self.nome, "sente o ataque aumentar por um tempo")
 
     def aplicar_bonus_defesa_temporario(self, quantidade, turnos):
         self.defesa += quantidade
-        self._bonus_defesa = quantidade
-        self._turnos_bonus_defesa = turnos
+        self.bonus_defesa.comecar(quantidade, turnos)
         print(self.nome, "sente a defesa aumentar por um tempo")
 
     def habilidade_especial(self, alvo):

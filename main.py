@@ -30,22 +30,25 @@ def escolher_personagem():
 
 
 def turno_do_jogador(jogador, inimigo):
-    print("\n1 - Atacar")
-    print("2 - Defender")
-    print("3 - Abrir a mochila")
-    print("4 - Usar habilidade especial")
+    acoes = {
+        "1": ("\n1 - Atacar", lambda j, i: j.atacar(i)),
+        "2": ("2 - Defender", lambda j, i: j.defender()),
+        "3": ("3 - Abrir a mochila", lambda j, i: abrir_mochila(j, i)),
+        "4": ("4 - Usar habilidade especial", lambda j, i: j.usar_habilidade(i)),
+    }
+
+    for rotulo, _ in acoes.values():
+        print(rotulo)
+
     escolha = input("Escolha: ")
 
-    if escolha == "1":
-        jogador.atacar(inimigo)
-    elif escolha == "2":
-        jogador.defender()
-    elif escolha == "3":
-        abrir_mochila(jogador, inimigo)
-    elif escolha == "4":
-        jogador.habilidade_especial(inimigo)
-    else:
+    if escolha not in acoes:
         print("Opção inválida")
+        return
+
+    _, funcao = acoes[escolha]
+    funcao(jogador, inimigo)
+
 
 def abrir_mochila(jogador, inimigo):
     if jogador.inventario.esta_vazio():
@@ -65,6 +68,7 @@ def abrir_mochila(jogador, inimigo):
 
     item.usar(jogador, inimigo)
 
+
 def combate(jogador, inimigo):
     while jogador.esta_vivo() and inimigo.esta_vivo():
         jogador.mostrar_status()
@@ -83,6 +87,17 @@ def combate(jogador, inimigo):
 
     print("Você foi derrotado")
     return False
+
+
+def recompensar(jogador, fase):
+    jogador.subir_nivel()
+
+    jogador.curar(50)
+    print(jogador.nome, "descansa e recupera 50 de vida")
+
+    jogador.inventario.adicionar(fase.premio)
+    print(fase.inimigo.nome, "deixou cair:", fase.premio)
+
 
 def main():
     jogador = escolher_personagem()
@@ -105,13 +120,7 @@ def main():
             print("Fim de jogo.")
             return
 
-        jogador.subir_nivel()
-
-        jogador.curar(50)
-        print(jogador.nome, "descansa e recupera 50 de vida")
-
-        jogador.inventario.adicionar(fase.premio)
-        print(fase.inimigo.nome, "deixou cair:", fase.premio)
+        recompensar(jogador, fase)
 
     print("\nVocê derrotou todos os inimigos. Fim.")
 
